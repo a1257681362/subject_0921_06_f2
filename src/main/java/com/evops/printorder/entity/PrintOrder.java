@@ -34,6 +34,9 @@ public class PrintOrder extends BaseEntity {
     private Long totalSheets;
     private BigDecimal paperWeightKg;
 
+    /** 付印金额（元，两位小数，来自客户平台报文/建档录入） */
+    private BigDecimal amount;
+
     private String status;
     private String remark;
 
@@ -71,6 +74,8 @@ public class PrintOrder extends BaseEntity {
     public void setTotalSheets(Long totalSheets) { this.totalSheets = totalSheets; }
     public BigDecimal getPaperWeightKg() { return paperWeightKg; }
     public void setPaperWeightKg(BigDecimal paperWeightKg) { this.paperWeightKg = paperWeightKg; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getRemark() { return remark; }

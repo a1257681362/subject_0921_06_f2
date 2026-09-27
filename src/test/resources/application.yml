@@ -14,3 +14,16 @@ mybatis-plus:
   type-aliases-package: com.evops
   configuration:
     map-underscore-to-camel-case: true
+
+# 测试环境：报文归档写 target；重试扫描间隔调大（1 小时），
+# 由用例手工驱动重试，避免定时任务干扰断言
+exchange:
+  platform:
+    endpoint: http://localhost:8080/mock/platform/orders
+  archive:
+    dir: ./target/test-exchange-archive
+  retry:
+    max-retry: 2
+    base-delay-seconds: 1
+    scan-interval-ms: 3600000
+    scan-limit: 10

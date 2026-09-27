@@ -33,6 +33,38 @@
 - `POST   /api/print-orders/{id}/void`     作废（写 VOID 反向记录并翻转状态）
 - `DELETE /api/print-orders/{id}` 删除（只打 deleted 标记）
 
+## 客户自助下单平台报文交换（XML）
+
+付印数据与客户自助下单平台双向交换：入站收 XML 自动建档，出站把印单组装成 XML 推送平台。
+
+报文规范（`com.evops.exchange.xml`，JAXB）：
+
+- 付印报文根节点 `FuYinMessage`（`header` 流水号/发送方/时间/类型 + `body` 付印数据），回执根节点 `FuYinReply`。
+- 日期 `yyyy-MM-dd`，时间 `yyyy-MM-dd HH:mm:ss`（Asia/Shanghai），金额固定两位小数，费率（损耗率/加放率）固定四位小数。
+- 入站按**报文原文字符串**先留档再反序列化；序列化↔反序列化往返业务字段不丢失（见 `XmlRoundTripTest`）。
+
+报文留档与重试：
+
+- 所有入站/出站报文统一登记 `t_exchange_message`，`payload` 原文整存并记 SHA-256 摘要；同时按**印单号**落一份文件副本到 `data/exchange-archive/{印单号}/`。
+- `(direction, message_id)` 唯一约束：平台重复推送同一流水号，幂等回放首次结论，不重复建档。
+- 出站发送失败置 `RETRYING`，按指数退避（`base×2^(n-1)`，上限 30 分钟）由定时任务重投；超过 `max-retry` 转 `DEAD` 转人工，也可手工立即重试。
+
+接口：
+
+- `POST /api/exchange/inbound/orders`          平台推付印数据（application/xml）→ 回 `FuYinReply`（ACCEPTED/REJECTED）
+- `POST /api/exchange/outbound/orders/{id}/push` 把印单组装成付印报文推送平台（失败自动重试）
+- `GET  /api/exchange/messages`                按印单号 + 方向/状态/类型组合分页检索归档
+- `GET  /api/exchange/messages/{id}`           报文元数据详情
+- `GET  /api/exchange/messages/{id}/payload`   下载报文原文（XML）
+- `POST /api/exchange/messages/{id}/retry`     手工立即重试失败报文
+
+对接演示：默认 `exchange.platform.endpoint` 指向本应用内置 mock 平台 `POST /mock/platform/orders`，
+开箱即可演"推送→受理回执"全链路；带 `?mockFailTimes=2` 可让同一报文前 2 次返回 500、第 3 次成功，演示失败退避重试。
+正式对接时把 endpoint 改成客户平台真实地址即可（mock 端点不参与正式链路）。
+
+相关配置（`application.yml`）：`exchange.platform.endpoint/connect-timeout-ms/read-timeout-ms`、
+`exchange.archive.dir`、`exchange.retry.max-retry/base-delay-seconds/scan-interval-ms/scan-limit`。
+
 ## 关键规则
 
 - 印单号、机台号加唯一约束；同一印单号重复建档直接拒绝并提示已存在。删除只打标记，号不释放。

@@ -57,6 +57,7 @@ public class PrintOrderService {
         order.setGsm(req.getGsm());
         order.setWasteRate(req.getWasteRate());
         order.setAddRate(req.getAddRate());
+        order.setAmount(req.getAmount());
         order.setRemark(req.getRemark());
         order.setStatus(PrintOrderStatus.ACTIVE.name());
 

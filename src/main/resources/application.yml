@@ -29,6 +29,22 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
+# 客户自助下单平台对接
+exchange:
+  platform:
+    # 默认指向内置 mock 回执端点，下周演示开箱即用；正式对接改为客户平台真实地址
+    endpoint: http://localhost:8080/mock/platform/orders
+    connect-timeout-ms: 5000
+    read-timeout-ms: 10000
+  archive:
+    # 报文原文按印单号归档的文件根目录（数据库 payload 为权威原文，此为文件副本）
+    dir: ./data/exchange-archive
+  retry:
+    max-retry: 5              # 失败重试上限，超过转 DEAD 转人工
+    base-delay-seconds: 30    # 退避基数：第 n 次间隔 30×2^(n-1)，上限 30 分钟
+    scan-interval-ms: 30000   # 定时扫描到期报文的间隔
+    scan-limit: 100
+
 logging:
   level:
     com.evops: INFO

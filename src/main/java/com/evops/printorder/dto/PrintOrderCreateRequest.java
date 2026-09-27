@@ -43,6 +43,10 @@ public class PrintOrderCreateRequest {
     @PositiveOrZero(message = "加放率不能为负")
     private BigDecimal addRate;
 
+    /** 付印金额（元，两位小数） */
+    @PositiveOrZero(message = "付印金额不能为负")
+    private BigDecimal amount;
+
     private String remark;
 
     public String getOrderNo() { return orderNo; }
@@ -69,6 +73,8 @@ public class PrintOrderCreateRequest {
     public void setWasteRate(BigDecimal wasteRate) { this.wasteRate = wasteRate; }
     public BigDecimal getAddRate() { return addRate; }
     public void setAddRate(BigDecimal addRate) { this.addRate = addRate; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
 }

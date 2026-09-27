@@ -23,6 +23,8 @@ public class ShiroConfig {
         chain.addPathDefinition("/api/health", "anon");
         chain.addPathDefinition("/api/machines/**", "anon");
         chain.addPathDefinition("/api/print-orders/**", "anon");
+        chain.addPathDefinition("/api/exchange/**", "anon");
+        chain.addPathDefinition("/mock/**", "anon");
         chain.addPathDefinition("/error", "anon");
         chain.addPathDefinition("/**", "authc");
         return chain;
