@@ -1,6 +1,7 @@
 # EVOPS 基础工作区
 
 印刷厂生产管理（第一批）：机台台账、印单全量记录、按印单号与日期组合检索。
+付印数据交换（第二批）：与客户自助下单平台对接，XML 报文收发、按印单号归档留原文、失败重试。
 
 技术栈：Java 8、Spring Boot 2.7、MyBatis-Plus、H2 本地文件数据库、Shiro、Thymeleaf。
 
@@ -33,6 +34,17 @@
 - `POST   /api/print-orders/{id}/void`     作废（写 VOID 反向记录并翻转状态）
 - `DELETE /api/print-orders/{id}` 删除（只打 deleted 标记）
 
+付印数据交换（对接客户自助下单平台）：
+
+- `POST   /api/exchange/print-orders/{id}/send`  生成付印报文并发送（先归档留原文，再调平台）
+- `POST   /api/exchange/messages/{id}/retry`     失败重试（重发归档原文，仅 PENDING/FAILED 可重试）
+- `GET    /api/exchange/messages`         报文归档检索（按印单号 + 方向/状态，分页）
+- `GET    /api/exchange/messages/{id}`    报文详情（含原文）
+- `POST   /api/exchange/inbound`          接收平台来文（application/xml，解析校验后按印单号归档）
+
+发送地址配置：`application.yml` 的 `exchange.gateway-url`（也可用环境变量 `EXCHANGE_GATEWAY_URL`），
+指向对方接收接口，如 `http://<平台地址>/api/exchange/inbound`。未配置时发送直接失败并归档，配置后可重试。
+
 ## 关键规则
 
 - 印单号、机台号加唯一约束；同一印单号重复建档直接拒绝并提示已存在。删除只打标记，号不释放。
@@ -40,6 +52,12 @@
 - 审计字段随写落库：`request_no` 请求号、`create_by/operator_name` 操作人、`create_time/update_time` 时间、`version` 乐观锁版本。
 - 用纸量按开数与克重估算：理论用纸 `CEIL(印数/开数)`；`waste_sheets` 损耗、`add_sheets` 加放按各自比率单列，合计 `total_sheets`，总重量 `paper_weight_kg`。
 - 印单与追溯记录两张表在同一事务写入，要么全成要么全不动（见 `PrintOrderTransactionTest`）。
+- 报文格式规范：日期 `yyyy-MM-dd`、时间 `yyyy-MM-dd HH:mm:ss`、金额定点 2 位小数、比率 4 位、重量 3 位；
+  往返转换内容不丢失（见 `PrintOrderMessageCodecTest`）。
+- 报文留原文：发出/接收的 XML 原文都落 `t_exchange_message.xml_content`，按印单号归档检索；
+  重试按归档原文重发，不重新生成报文。
+- 发送与归档分步提交：先归档 PENDING 再调平台，成功 SENT、失败 FAILED 记原因；FAILED/PENDING 可重试。
+- 平台来文解析失败也留原文归档（印单号记 UNKNOWN），便于对账排查；同一报文ID重复推送直接拒绝。
 
 ## Schema 交付副本
 

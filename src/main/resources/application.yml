@@ -29,6 +29,12 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
+# 客户自助下单平台对接：付印报文发送地址（POST application/xml）。
+# 演示前配置对方接收地址，如 http://<平台地址>/api/exchange/inbound；
+# 留空时发送直接失败并归档，配置后可重试。
+exchange:
+  gateway-url: ${EXCHANGE_GATEWAY_URL:}
+
 logging:
   level:
     com.evops: INFO
